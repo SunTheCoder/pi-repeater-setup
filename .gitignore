@@ -1,0 +1,13 @@
+# System files
+*.log
+*.pid
+*.swp
+.DS_Store
+
+# Temporary files
+/tmp/
+/var/tmp/
+
+# Local configuration
+*.local
+*.bak 
