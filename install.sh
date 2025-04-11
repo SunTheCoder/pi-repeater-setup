@@ -36,59 +36,19 @@ systemctl stop dnsmasq
 
 # Configure hostapd
 echo -e "${GREEN}Configuring hostapd...${NC}"
-cat > /etc/hostapd/hostapd.conf << EOF
-interface=${WIFI_INTERFACE}
-driver=nl80211
-ssid=${SSID}
-hw_mode=g
-channel=${CHANNEL}
-wmm_enabled=0
-macaddr_acl=0
-auth_algs=1
-ignore_broadcast_ssid=0
-wpa=2
-wpa_passphrase=${PASSWORD}
-wpa_key_mgmt=WPA-PSK
-wpa_pairwise=TKIP
-rsn_pairwise=CCMP
-EOF
+envsubst < $(dirname "$0")/configs/hostapd.conf > /etc/hostapd/hostapd.conf
 
 # Configure dnsmasq
 echo -e "${GREEN}Configuring dnsmasq...${NC}"
-cat > /etc/dnsmasq.conf << EOF
-interface=${WIFI_INTERFACE}
-dhcp-range=${IP_ADDRESS},${IP_ADDRESS},255.255.255.0,24h
-domain=local
-address=/gw.local/${IP_ADDRESS}
-EOF
+envsubst < $(dirname "$0")/configs/dnsmasq.conf > /etc/dnsmasq.conf
 
 # Configure static IP
 echo -e "${GREEN}Configuring static IP...${NC}"
-cat > /etc/dhcpcd.conf.append << EOF
-interface ${WIFI_INTERFACE}
-    static ip_address=${IP_ADDRESS}/24
-    nohook wpa_supplicant
-EOF
+envsubst < $(dirname "$0")/configs/dhcpcd.conf.append > /etc/dhcpcd.conf.append
 
 # Configure iptables
 echo -e "${GREEN}Configuring iptables...${NC}"
-cat > /etc/iptables/rules.v4 << EOF
-*nat
-:PREROUTING ACCEPT [0:0]
-:INPUT ACCEPT [0:0]
-:OUTPUT ACCEPT [0:0]
-:POSTROUTING ACCEPT [0:0]
--A POSTROUTING -o eth0 -j MASQUERADE
-COMMIT
-
-*filter
-:INPUT ACCEPT [0:0]
-:FORWARD ACCEPT [0:0]
-:OUTPUT ACCEPT [0:0]
--A FORWARD -i ${WIFI_INTERFACE} -o eth0 -j ACCEPT
--A FORWARD -i eth0 -o ${WIFI_INTERFACE} -m state --state RELATED,ESTABLISHED -j ACCEPT
-COMMIT
-EOF
+envsubst < $(dirname "$0")/configs/iptables.rules.v4 > /etc/iptables/rules.v4
 
 # Enable IP forwarding
 echo -e "${GREEN}Enabling IP forwarding...${NC}"

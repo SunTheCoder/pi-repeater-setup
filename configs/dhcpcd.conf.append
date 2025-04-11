@@ -1,0 +1,3 @@
+interface ${WIFI_INTERFACE}
+    static ip_address=${IP_ADDRESS}/24
+    nohook wpa_supplicant 
