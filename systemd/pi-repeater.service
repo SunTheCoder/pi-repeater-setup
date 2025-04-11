@@ -1,0 +1,14 @@
+[Unit]
+Description=Pi Zero 2 W Repeater Service
+After=network.target
+
+[Service]
+Type=simple
+ExecStartPre=/bin/sleep 10
+ExecStart=/bin/bash -c 'systemctl restart hostapd && systemctl restart dnsmasq'
+Restart=on-failure
+RestartSec=5
+User=root
+
+[Install]
+WantedBy=multi-user.target 

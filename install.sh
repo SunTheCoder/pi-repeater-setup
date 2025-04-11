@@ -95,6 +95,12 @@ echo -e "${GREEN}Enabling IP forwarding...${NC}"
 echo "net.ipv4.ip_forward=1" >> /etc/sysctl.conf
 sysctl -p
 
+# Install and enable systemd service
+echo -e "${GREEN}Installing systemd service...${NC}"
+cp $(dirname "$0")/systemd/pi-repeater.service /etc/systemd/system/
+systemctl daemon-reload
+systemctl enable pi-repeater.service
+
 # Enable and start services
 echo -e "${GREEN}Enabling and starting services...${NC}"
 systemctl unmask hostapd
@@ -102,6 +108,7 @@ systemctl enable hostapd
 systemctl enable dnsmasq
 systemctl start hostapd
 systemctl start dnsmasq
+systemctl start pi-repeater.service
 
 # Apply iptables rules
 echo -e "${GREEN}Applying iptables rules...${NC}"
