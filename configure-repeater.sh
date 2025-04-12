@@ -7,10 +7,6 @@ set -e
 export SSID="OffGridNetRepeater"
 export PASSWORD="raspberry"
 export CHANNEL="6"
-export WIFI_INTERFACE="wlan0"
-export BRIDGE_INTERFACE="br0"
-export IP_ADDRESS="192.168.5.1"  # Different subnet from OffGridNet
-export SUBNET="192.168.5.0/24"   # Different subnet from OffGridNet
 
 # Colors for output
 RED='\033[0;31m'
@@ -31,15 +27,15 @@ systemctl stop dnsmasq
 
 # Configure hostapd
 echo -e "${GREEN}Configuring hostapd...${NC}"
-envsubst < $(dirname "$0")/configs/hostapd.conf > /etc/hostapd/hostapd.conf
+cp $(dirname "$0")/configs/hostapd.conf /etc/hostapd/hostapd.conf
 
 # Configure dnsmasq
 echo -e "${GREEN}Configuring dnsmasq...${NC}"
-envsubst < $(dirname "$0")/configs/dnsmasq.conf > /etc/dnsmasq.conf
+cp $(dirname "$0")/configs/dnsmasq.conf /etc/dnsmasq.conf
 
 # Configure static IP
 echo -e "${GREEN}Configuring static IP...${NC}"
-envsubst < $(dirname "$0")/configs/dhcpcd.conf.append > /etc/dhcpcd.conf.append
+cat $(dirname "$0")/configs/dhcpcd.conf.append >> /etc/dhcpcd.conf
 
 # Configure iptables
 echo -e "${GREEN}Configuring iptables...${NC}"
@@ -56,15 +52,15 @@ COMMIT
 :INPUT ACCEPT [0:0]
 :FORWARD ACCEPT [0:0]
 :OUTPUT ACCEPT [0:0]
--A FORWARD -i ${BRIDGE_INTERFACE} -o wlan0 -j ACCEPT
--A FORWARD -i wlan0 -o ${BRIDGE_INTERFACE} -m state --state RELATED,ESTABLISHED -j ACCEPT
+-A FORWARD -i wlan1 -o wlan0 -j ACCEPT
+-A FORWARD -i wlan0 -o wlan1 -m state --state RELATED,ESTABLISHED -j ACCEPT
 COMMIT
 EOF
 
 # Enable IP forwarding
 echo -e "${GREEN}Enabling IP forwarding...${NC}"
-echo "net.ipv4.ip_forward=1" >> /etc/sysctl.conf
-sysctl -p
+echo "net.ipv4.ip_forward=1" > /etc/sysctl.d/90-ip-forward.conf
+sysctl -p /etc/sysctl.d/90-ip-forward.conf
 
 # Enable and start services
 echo -e "${GREEN}Enabling and starting services...${NC}"
@@ -81,7 +77,7 @@ iptables-restore < /etc/iptables/rules.v4
 echo -e "${GREEN}Setup complete! The Pi is now configured as a repeater.${NC}"
 echo -e "${GREEN}SSID: ${SSID}${NC}"
 echo -e "${GREEN}Password: ${PASSWORD}${NC}"
-echo -e "${GREEN}IP Address: ${IP_ADDRESS}${NC}"
+echo -e "${GREEN}IP Address: 192.168.5.1${NC}"
 
 # Prompt for reboot
 read -p "Do you want to reboot now? (y/n) " -n 1 -r
