@@ -48,7 +48,23 @@ envsubst < $(dirname "$0")/configs/dhcpcd.conf.append > /etc/dhcpcd.conf.append
 
 # Configure iptables
 echo -e "${GREEN}Configuring iptables...${NC}"
-envsubst < $(dirname "$0")/configs/iptables.rules.v4 > /etc/iptables/rules.v4
+sudo bash -c 'cat > /etc/iptables/rules.v4 << EOF
+*nat
+:PREROUTING ACCEPT [0:0]
+:INPUT ACCEPT [0:0]
+:OUTPUT ACCEPT [0:0]
+:POSTROUTING ACCEPT [0:0]
+-A POSTROUTING -o eth0 -j MASQUERADE
+COMMIT
+
+*filter
+:INPUT ACCEPT [0:0]
+:FORWARD ACCEPT [0:0]
+:OUTPUT ACCEPT [0:0]
+-A FORWARD -i wlan0 -o eth0 -j ACCEPT
+-A FORWARD -i eth0 -o wlan0 -m state --state RELATED,ESTABLISHED -j ACCEPT
+COMMIT
+EOF'
 
 # Enable IP forwarding
 echo -e "${GREEN}Enabling IP forwarding...${NC}"
