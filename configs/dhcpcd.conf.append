@@ -1,6 +1,6 @@
+# Allow wlan0 to get IP from OffGridNet via DHCP
 interface wlan0
-    static ip_address=192.168.5.1/24
-    nohook wpa_supplicant
+    # No static IP - let DHCP work
 
 interface wlan1
     static ip_address=192.168.5.1/24
