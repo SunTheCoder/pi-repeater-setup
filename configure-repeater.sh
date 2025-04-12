@@ -22,22 +22,43 @@ if ! iwconfig wlan0 | grep -q "OffGridNet"; then
     exit 1
 fi
 
-# Stop only hostapd and dnsmasq, leave wpa_supplicant running
+# Stop services
 systemctl stop hostapd
 systemctl stop dnsmasq
 
-# Configure hostapd
+# Create virtual interface
+echo -e "${GREEN}Creating virtual interface...${NC}"
+iw dev wlan0 interface add uap0 type __ap
+ip link set uap0 up
+ip addr add 192.168.5.1/24 dev uap0
+
+# Configure hostapd with virtual interface
 echo -e "${GREEN}Configuring hostapd...${NC}"
-cp $(dirname "$0")/configs/hostapd.conf /etc/hostapd/hostapd.conf
+cat > /etc/hostapd/hostapd.conf << EOF
+interface=uap0
+driver=nl80211
+ssid=OffGridNetRepeater
+hw_mode=g
+channel=6
+wmm_enabled=0
+macaddr_acl=0
+auth_algs=1
+ignore_broadcast_ssid=0
+wpa=2
+wpa_passphrase=raspberry
+wpa_key_mgmt=WPA-PSK
+wpa_pairwise=TKIP
+rsn_pairwise=CCMP
+EOF
 
 # Configure dnsmasq
 echo -e "${GREEN}Configuring dnsmasq...${NC}"
-cp $(dirname "$0")/configs/dnsmasq.conf /etc/dnsmasq.conf
-
-# Configure static IP
-echo -e "${GREEN}Configuring static IP...${NC}"
-cp $(dirname "$0")/configs/dhcpcd.conf.append /etc/dhcpcd.conf.append
-cat /etc/dhcpcd.conf.append >> /etc/dhcpcd.conf
+cat > /etc/dnsmasq.conf << EOF
+interface=uap0
+dhcp-range=192.168.5.2,192.168.5.254,255.255.255.0,24h
+domain=local
+address=/gw.local/192.168.5.1
+EOF
 
 # Configure iptables for NAT
 echo -e "${GREEN}Configuring iptables...${NC}"
@@ -47,8 +68,8 @@ iptables -t nat -F
 
 # Set up NAT
 iptables -t nat -A POSTROUTING -o wlan0 -j MASQUERADE
-iptables -A FORWARD -i wlan0 -o wlan0 -m state --state RELATED,ESTABLISHED -j ACCEPT
-iptables -A FORWARD -i wlan0 -o wlan0 -j ACCEPT
+iptables -A FORWARD -i uap0 -o wlan0 -j ACCEPT
+iptables -A FORWARD -i wlan0 -o uap0 -m state --state RELATED,ESTABLISHED -j ACCEPT
 
 # Save iptables rules
 iptables-save > /etc/iptables/rules.v4
@@ -58,13 +79,33 @@ echo -e "${GREEN}Enabling IP forwarding...${NC}"
 echo "net.ipv4.ip_forward=1" > /etc/sysctl.d/90-ip-forward.conf
 sysctl -p /etc/sysctl.d/90-ip-forward.conf
 
+# Create systemd service to create virtual interface on boot
+echo -e "${GREEN}Creating startup service...${NC}"
+cat > /etc/systemd/system/create-wifi-interface.service << EOF
+[Unit]
+Description=Create Virtual Wifi Interface
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/sbin/iw dev wlan0 interface add uap0 type __ap
+ExecStart=/sbin/ip link set uap0 up
+ExecStart=/sbin/ip addr add 192.168.5.1/24 dev uap0
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
 # Enable and start services
 echo -e "${GREEN}Enabling and starting services...${NC}"
-systemctl unmask hostapd
+systemctl daemon-reload
+systemctl enable create-wifi-interface
 systemctl enable hostapd
 systemctl enable dnsmasq
 
 # Start services
+systemctl start create-wifi-interface
 systemctl start hostapd
 systemctl start dnsmasq
 
