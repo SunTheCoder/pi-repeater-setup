@@ -4,13 +4,13 @@
 set -e
 
 # Configuration variables
-SSID="OffGridNetRepeater"
-PASSWORD="raspberry"
-CHANNEL="6"
-WIFI_INTERFACE="wlan0"
-BRIDGE_INTERFACE="br0"
-IP_ADDRESS="192.168.4.1"
-SUBNET="192.168.4.0/24"
+export SSID="OffGridNetRepeater"
+export PASSWORD="raspberry"
+export CHANNEL="6"
+export WIFI_INTERFACE="wlan0"
+export BRIDGE_INTERFACE="br0"
+export IP_ADDRESS="192.168.4.1"
+export SUBNET="192.168.4.0/24"
 
 # Colors for output
 RED='\033[0;31m'
