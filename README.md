@@ -1,85 +1,48 @@
-# Pi Zero 2 W Repeater Setup
+# OffGridNet Extender
 
-This repository contains everything you need to turn your Raspberry Pi Zero 2 W into a Wi-Fi repeater. The setup creates a wireless access point that bridges to your existing network, effectively extending your Wi-Fi coverage.
+A simple script to configure a Raspberry Pi Zero W as a range extender for OffGridNet.
 
-## Features
+## What it does
 
-- Creates a wireless access point
-- Bridges to existing network
-- DHCP server for connected clients
-- NAT and port forwarding
-- Persistent configuration
-- Easy setup with a single script
+- Connects to OffGridNet
+- Enables packet forwarding
+- Sets up NAT
+- Extends the network range
 
-## Requirements
+## How to use
 
-- Raspberry Pi Zero 2 W
-- Raspberry Pi OS (Bullseye or later)
-- Internet connection (for initial setup)
-- Root access
-
-## Quick Start
-
-1. Clone this repository:
-```bash
-git clone https://github.com/your-username/pi-repeater-setup.git
-cd pi-repeater-setup
-```
-
-2. Make the install script executable:
-```bash
-chmod +x install.sh
-```
-
-3. Run the installation script as root:
-```bash
-sudo ./install.sh
-```
-
+1. Clone this repository
+2. Make the script executable:
+   ```bash
+   chmod +x extend.sh
+   ```
+3. Run the script:
+   ```bash
+   sudo ./extend.sh
+   ```
 4. Reboot when prompted
 
-## Configuration
+## How to verify it's working
 
-You can modify the following variables in `install.sh` to customize your setup:
+1. Check if connected to OffGridNet:
+   ```bash
+   iwconfig wlan0
+   ```
 
-- `SSID`: The name of your wireless network
-- `PASSWORD`: The password for your wireless network
-- `CHANNEL`: The Wi-Fi channel to use
-- `IP_ADDRESS`: The IP address of the Pi on the repeater network
+2. Check if IP forwarding is enabled:
+   ```bash
+   cat /proc/sys/net/ipv4/ip_forward
+   ```
+   Should show: 1
 
-## Default Settings
+3. Check if NAT is set up:
+   ```bash
+   sudo iptables -t nat -L
+   ```
+   Should show MASQUERADE rule
 
-- SSID: `PiRepeater`
-- Password: `raspberry`
-- IP Address: `192.168.4.1`
-- Subnet: `192.168.4.0/24`
+## Testing the range extension
 
-## Troubleshooting
-
-If you encounter issues:
-
-1. Check the status of services:
-```bash
-systemctl status hostapd
-systemctl status dnsmasq
-```
-
-2. View logs:
-```bash
-journalctl -u hostapd
-journalctl -u dnsmasq
-```
-
-3. Verify iptables rules:
-```bash
-iptables -L
-iptables -t nat -L
-```
-
-## Contributing
-
-Feel free to submit issues and pull requests. All contributions are welcome!
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details. 
+1. Find a spot where OffGridNet signal is weak
+2. Place the Pi Zero halfway between that spot and the OffGridNet source
+3. You should now get better signal in the previously weak spot 
