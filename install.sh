@@ -4,7 +4,7 @@
 set -e
 
 # Configuration variables
-SSID="PiRepeater"
+SSID="OffGridNetRepeater"
 PASSWORD="raspberry"
 CHANNEL="6"
 WIFI_INTERFACE="wlan0"
