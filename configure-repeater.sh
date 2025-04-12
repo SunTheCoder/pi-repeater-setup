@@ -26,16 +26,10 @@ fi
 systemctl stop hostapd
 systemctl stop dnsmasq
 
-# Create virtual interface
-echo -e "${GREEN}Creating virtual interface...${NC}"
-iw dev wlan0 interface add uap0 type __ap
-ip link set uap0 up
-ip addr add 192.168.5.1/24 dev uap0
-
-# Configure hostapd with virtual interface
+# Configure hostapd to use wlan0
 echo -e "${GREEN}Configuring hostapd...${NC}"
 cat > /etc/hostapd/hostapd.conf << EOF
-interface=uap0
+interface=wlan0
 driver=nl80211
 ssid=OffGridNetRepeater
 hw_mode=g
@@ -54,10 +48,21 @@ EOF
 # Configure dnsmasq
 echo -e "${GREEN}Configuring dnsmasq...${NC}"
 cat > /etc/dnsmasq.conf << EOF
-interface=uap0
+interface=wlan0
 dhcp-range=192.168.5.2,192.168.5.254,255.255.255.0,24h
 domain=local
 address=/gw.local/192.168.5.1
+EOF
+
+# Configure network interfaces
+echo -e "${GREEN}Configuring network interfaces...${NC}"
+cat > /etc/network/interfaces.d/wlan0 << EOF
+allow-hotplug wlan0
+iface wlan0 inet static
+    address 192.168.5.1
+    netmask 255.255.255.0
+    network 192.168.5.0
+    broadcast 192.168.5.255
 EOF
 
 # Configure iptables for NAT
@@ -68,8 +73,8 @@ iptables -t nat -F
 
 # Set up NAT
 iptables -t nat -A POSTROUTING -o wlan0 -j MASQUERADE
-iptables -A FORWARD -i uap0 -o wlan0 -j ACCEPT
-iptables -A FORWARD -i wlan0 -o uap0 -m state --state RELATED,ESTABLISHED -j ACCEPT
+iptables -A FORWARD -i wlan0 -o wlan0 -j ACCEPT
+iptables -A FORWARD -i wlan0 -o wlan0 -m state --state RELATED,ESTABLISHED -j ACCEPT
 
 # Save iptables rules
 iptables-save > /etc/iptables/rules.v4
@@ -79,33 +84,13 @@ echo -e "${GREEN}Enabling IP forwarding...${NC}"
 echo "net.ipv4.ip_forward=1" > /etc/sysctl.d/90-ip-forward.conf
 sysctl -p /etc/sysctl.d/90-ip-forward.conf
 
-# Create systemd service to create virtual interface on boot
-echo -e "${GREEN}Creating startup service...${NC}"
-cat > /etc/systemd/system/create-wifi-interface.service << EOF
-[Unit]
-Description=Create Virtual Wifi Interface
-After=network.target
-
-[Service]
-Type=oneshot
-ExecStart=/sbin/iw dev wlan0 interface add uap0 type __ap
-ExecStart=/sbin/ip link set uap0 up
-ExecStart=/sbin/ip addr add 192.168.5.1/24 dev uap0
-RemainAfterExit=yes
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
 # Enable and start services
 echo -e "${GREEN}Enabling and starting services...${NC}"
-systemctl daemon-reload
-systemctl enable create-wifi-interface
+systemctl unmask hostapd
 systemctl enable hostapd
 systemctl enable dnsmasq
 
 # Start services
-systemctl start create-wifi-interface
 systemctl start hostapd
 systemctl start dnsmasq
 
