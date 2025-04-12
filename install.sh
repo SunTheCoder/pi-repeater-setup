@@ -9,8 +9,8 @@ export PASSWORD="raspberry"
 export CHANNEL="6"
 export WIFI_INTERFACE="wlan0"
 export BRIDGE_INTERFACE="br0"
-export IP_ADDRESS="192.168.4.1"
-export SUBNET="192.168.4.0/24"
+export IP_ADDRESS="192.168.5.1"
+export SUBNET="192.168.5.0/24"
 
 # Colors for output
 RED='\033[0;31m'
